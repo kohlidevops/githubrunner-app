@@ -1,0 +1,85 @@
+name: Deploy to Private EC2
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:     # allow manual trigger
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install -r app/requirements.txt
+
+      - name: Run tests
+        run: |
+          python -m pytest app/ --tb=short
+
+  deploy:
+    name: Deploy to EC2
+    runs-on: [self-hosted, aws, private]   # targets your runner
+    needs: test                             # only deploy if tests pass
+    environment: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # ── Write SSH keys to runner ──────────────────────────────────────────
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+
+          # App server key
+          echo "${{ secrets.APP_EC2_PRIVATE_KEY }}" > ~/.ssh/app-key.pem
+          chmod 600 ~/.ssh/app-key.pem
+
+          # Add app server to known hosts via its private IP
+          ssh-keyscan -H ${{ secrets.APP_EC2_PRIVATE_IP }} >> ~/.ssh/known_hosts 2>/dev/null || true
+
+      # ── Sync code to app EC2 via rsync over SSH ───────────────────────────
+      - name: Deploy files to EC2
+        run: |
+          rsync -avz --delete \
+            -e "ssh -i ~/.ssh/app-key.pem -o StrictHostKeyChecking=no" \
+            ./app/ \
+            ec2-user@${{ secrets.APP_EC2_PRIVATE_IP }}:/home/ec2-user/app/
+
+          rsync -avz \
+            -e "ssh -i ~/.ssh/app-key.pem -o StrictHostKeyChecking=no" \
+            ./scripts/ \
+            ec2-user@${{ secrets.APP_EC2_PRIVATE_IP }}:/home/ec2-user/scripts/
+
+      # ── Run deployment script on app EC2 ─────────────────────────────────
+      - name: Run deploy script on EC2
+        run: |
+          ssh -i ~/.ssh/app-key.pem \
+            -o StrictHostKeyChecking=no \
+            ec2-user@${{ secrets.APP_EC2_PRIVATE_IP }} \
+            'bash /home/ec2-user/scripts/deploy.sh'
+
+      # ── Health check ──────────────────────────────────────────────────────
+      - name: Health check
+        run: |
+          ssh -i ~/.ssh/app-key.pem \
+            -o StrictHostKeyChecking=no \
+            ec2-user@${{ secrets.APP_EC2_PRIVATE_IP }} \
+            'curl -sf http://localhost:8080/health || exit 1'
+
+      # ── Cleanup sensitive files ───────────────────────────────────────────
+      - name: Cleanup SSH keys
+        if: always()    # runs even if deploy fails
+        run: |
+          rm -f ~/.ssh/app-key.pem
+          rm -f ~/.ssh/known_hosts
