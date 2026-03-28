@@ -7,7 +7,7 @@ set -euo pipefail
 APP_DIR="/home/ec2-user/app"
 VENV_DIR="/home/ec2-user/venv"
 SERVICE_NAME="myapp"
-LOG_FILE="/var/log/myapp-deploy.log"
+LOG_FILE="/home/ec2-user/myapp-deploy.log"
 
 log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOG_FILE"; }
 
