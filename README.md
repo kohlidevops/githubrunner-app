@@ -212,6 +212,7 @@ tar xzf actions-runner-linux-x64.tar.gz
 # Configure runner — get token from:
 # GitHub repo → Settings → Actions → Runners → New self-hosted runner
 sudo ./bin/installdependencies.sh
+sudo dnf install -y libicu
 ./config.sh \
   --url https://github.com/YOUR_USERNAME/YOUR_REPO \
   --token YOUR_RUNNER_TOKEN \
