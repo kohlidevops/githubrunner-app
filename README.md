@@ -231,7 +231,9 @@ Go to your repo → Settings → Secrets and variables → Actions → New repos
 
 Add these secrets:
 
-<img width="712" height="293" alt="image" src="https://github.com/user-attachments/assets/6e740590-ba6b-4e41-9721-06905dd3c69b" />
+
+<img width="1379" height="659" alt="image" src="https://github.com/user-attachments/assets/68493047-c75b-4b9e-b770-1caf90025daf" />
+
 
 ## Step 5 - Workflow File
 
