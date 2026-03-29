@@ -1,5 +1,9 @@
 # GitHub Actions to deploy the app on EC2 using Self-Hosted Runner
 
+
+<img width="1016" height="810" alt="image" src="https://github.com/user-attachments/assets/f3c4d0ea-f190-402c-967a-63f0681427eb" />
+
+
 ## Step 1 - AWS Infrastructure Setup
 
 ### Create VPC, Subnets, IGW and NAT Gateway
